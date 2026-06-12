@@ -6586,6 +6586,40 @@ const LATEST_YEAR = PROFILE_YEARS[PROFILE_YEARS.length - 1];
 
 // Asumsi konversi default (dipakai sistem mengubah Rupiah → satuan teknis & emisi)
 let CONV_DEFAULT = { elecTariff: 1450 /*Rp/kWh*/, fuelPrice: 13000 /*Rp/liter*/, gridEF: 0.79 /*tCO₂e/MWh*/, fuelEF: 2.68 /*kgCO₂/liter*/ };
+
+/* Katalog bahan bakar Scope 1 — harga (Rp/unit) & faktor emisi (kgCO₂/unit) bisa diedit per baris.
+   Nilai EF indikatif (IPCC/KLHK); sesuaikan bila punya angka spesifik. */
+const FUEL_CATALOG = [
+  { id: 'solar',    label: 'Solar / Diesel',        unit: 'liter', price: 13000, ef: 2.68 },
+  { id: 'bensin',   label: 'Bensin / Pertalite',    unit: 'liter', price: 12000, ef: 2.31 },
+  { id: 'pertamax', label: 'Pertamax / Gasoline',   unit: 'liter', price: 13500, ef: 2.31 },
+  { id: 'lpg',      label: 'LPG',                   unit: 'kg',    price: 12000, ef: 3.00 },
+  { id: 'cng',      label: 'Gas Alam (CNG)',        unit: 'm³',    price: 4500,  ef: 1.93 },
+  { id: 'batubara', label: 'Batu Bara',             unit: 'kg',    price: 1200,  ef: 2.42 },
+  { id: 'mfo',      label: 'Marine Fuel Oil (MFO)', unit: 'liter', price: 9000,  ef: 3.11 },
+  { id: 'biodiesel',label: 'Biodiesel (B35)',       unit: 'liter', price: 13500, ef: 1.74 },
+  { id: 'custom',   label: 'Lainnya (isi sendiri)', unit: 'unit',  price: 10000, ef: 2.50 },
+];
+
+/* Katalog sumber listrik (Scope 2) — tarif Rp/kWh & faktor emisi tCO₂e/MWh */
+const ELEC_CATALOG = [
+  { id: 'pln_jamali', label: 'PLN Grid (Jamali)',        tariff: 1450, ef: 0.79 },
+  { id: 'pln_luar',   label: 'PLN Grid (luar Jamali)',   tariff: 1600, ef: 1.05 },
+  { id: 're',         label: 'Listrik Terbarukan / REC', tariff: 1500, ef: 0.00 },
+  { id: 'steam',      label: 'Uap / Panas Dibeli',       tariff: 1200, ef: 0.20 },
+  { id: 'custom',     label: 'Lainnya (isi sendiri)',    tariff: 1450, ef: 0.79 },
+];
+
+/* Katalog kategori Scope 3 — faktor spend-based tCO₂e/Rp juta */
+const SCOPE3_CATALOG = [
+  { id: 'cat1',   label: 'Kat 1 · Barang & Jasa Dibeli', factor: 0.31 },
+  { id: 'cat2',   label: 'Kat 2 · Barang Modal',          factor: 0.25 },
+  { id: 'cat4',   label: 'Kat 4 · Transport Hulu',        factor: 0.40 },
+  { id: 'cat5',   label: 'Kat 5 · Limbah Operasi',        factor: 0.18 },
+  { id: 'cat6',   label: 'Kat 6 · Perjalanan Bisnis',     factor: 0.22 },
+  { id: 'cat7',   label: 'Kat 7 · Komuter Karyawan',      factor: 0.15 },
+  { id: 'custom', label: 'Lainnya (isi sendiri)',         factor: 0.30 },
+];
 let SCOPE3_FACTOR = 0.31; /* tCO₂e per Rp juta belanja (spend-based EEIO) — bisa diubah superadmin */
 let USD_IDR_RATE = 16000; /* kurs USD→IDR untuk harga karbon skenario — bisa diubah superadmin */
 
@@ -6649,7 +6683,6 @@ const TEMPORAL_FIN = [
   { key: 'capexHist',      label: 'Belanja Modal (CAPEX)',unit: 'Rp juta' },
 ];
 const TEMPORAL_ENERGY = [
-  { key: 'fuelSpend',   label: 'Scope 1 · Biaya Bahan Bakar & BBM', unit: 'Rp juta', help: 'solar, gas, bensin — emisi langsung' },
   { key: 'elecSpend',   label: 'Scope 2 · Biaya Listrik', unit: 'Rp juta', help: 'listrik dibeli — emisi tak langsung' },
   { key: 'scope3Spend', label: 'Scope 3 · Belanja Barang & Jasa', unit: 'Rp juta', help: 'rantai pasok — estimasi (spend-based)' },
 ];
@@ -6811,6 +6844,18 @@ const DEFAULT_PROFILE = {
     scope3Spend:    { [PROFILE_YEARS[0]]: 165000, [PROFILE_YEARS[1]]: 170000, [PROFILE_YEARS[2]]: 174000, [PROFILE_YEARS[3]]: 178000, [PROFILE_YEARS[4]]: 180000 },
   },
   reShare: 'Sedikit (<10%)', captivePower: 'Tidak ada', elecTariff: 1450, fuelPrice: 13000,
+  fuels: [
+    { key: 'f1', id: 'solar', label: 'Solar / Diesel',  unit: 'liter', price: 13000, ef: 2.68, spend: 5500 },
+    { key: 'f2', id: 'cng',   label: 'Gas Alam (CNG)',   unit: 'm³',    price: 4500,  ef: 1.93, spend: 2500 },
+  ],
+  elec: [
+    { key: 'e1', id: 'pln_jamali', label: 'PLN Grid (Jamali)', tariff: 1450, ef: 0.79, spend: 18000 },
+    { key: 'e2', id: 're', label: 'Listrik Terbarukan / REC', tariff: 1500, ef: 0.00, spend: 2000 },
+  ],
+  scope3: [
+    { key: 's1', id: 'cat1', label: 'Kat 1 · Barang & Jasa Dibeli', factor: 0.31, spend: 150000 },
+    { key: 's2', id: 'cat4', label: 'Kat 4 · Transport Hulu', factor: 0.40, spend: 30000 },
+  ],
   pvSpace: 'Lumayan luas', processHeat: 'Panas sedang (150–300°C)', fleetSize: 25, waterUse: 'Sedang',
   climateCommitment: 'Punya target internal', netZeroTarget: 2060, decarbTarget: 30, interimTargetYear: 2030,
   internalCarbonPrice: 0, climateOversight: 'Komite khusus di Dewan Komisaris', esgRemuneration: 'Tidak',
@@ -6826,18 +6871,49 @@ const DEFAULT_PROFILE = {
 // Konversi biaya energi → MWh / liter / emisi (dipakai bersama oleh Profil & visualisasi GHG)
 const profileEnergy = (p, year) => {
   const t = (p && p.temporal) || {};
-  const eTar = Number(p && p.elecTariff) || CONV_DEFAULT.elecTariff;
-  const fPr = Number(p && p.fuelPrice) || CONV_DEFAULT.fuelPrice;
-  const eSpend = Number(t.elecSpend && t.elecSpend[year]) || 0;     // Rp juta
-  const fSpend = Number(t.fuelSpend && t.fuelSpend[year]) || 0;     // Rp juta
-  const mwh = eSpend * 1000 / eTar;
-  const liter = fSpend * 1e6 / fPr;
-  const scope2 = mwh * CONV_DEFAULT.gridEF;            // tCO₂e (listrik)
-  const scope1 = liter * CONV_DEFAULT.fuelEF / 1000;   // tCO₂e (BBM)
+  // Scope 2 dari rincian sumber listrik (grid/EBT/uap beda faktor)
+  let scope2 = 0, mwh = 0;
+  const elec = Array.isArray(p && p.elec) ? p.elec : null;
+  if (elec && elec.length) {
+    elec.forEach(e => {
+      const sp = Number(e.spend) || 0; const tar = Number(e.tariff) || 0; const ef = Number(e.ef) || 0;
+      if (tar <= 0) return;
+      const m = sp * 1000 / tar;                       // MWh
+      mwh += m; scope2 += m * ef;                       // tCO₂e
+    });
+  } else {
+    const eTar = Number(p && p.elecTariff) || CONV_DEFAULT.elecTariff;
+    const eSpend = Number(t.elecSpend && t.elecSpend[year]) || 0;
+    mwh = eSpend * 1000 / eTar;
+    scope2 = mwh * CONV_DEFAULT.gridEF;
+  }
+  // Scope 1 dari rincian per bahan bakar (masing-masing harga & faktor emisi sendiri)
+  let scope1 = 0, liter = 0;
+  const fuels = Array.isArray(p && p.fuels) ? p.fuels : null;
+  if (fuels && fuels.length) {
+    fuels.forEach(f => {
+      const sp = Number(f.spend) || 0;                 // Rp juta/tahun
+      const pr = Number(f.price) || 0;                 // Rp/unit
+      const ef = Number(f.ef) || 0;                    // kgCO₂/unit
+      if (pr <= 0) return;
+      const units = sp * 1e6 / pr;                     // unit (liter/kg/m³)
+      scope1 += units * ef / 1000;                     // tCO₂e
+      liter += units;
+    });
+  } else {
+    const fPr = Number(p && p.fuelPrice) || CONV_DEFAULT.fuelPrice;
+    const fSpend = Number(t.fuelSpend && t.fuelSpend[year]) || 0;
+    liter = fSpend * 1e6 / fPr;
+    scope1 = liter * CONV_DEFAULT.fuelEF / 1000;
+  }
   return { mwh, liter, scope1, scope2, total: scope1 + scope2 };
 };
 // Estimasi Scope 3 (kategori 1) dari belanja pengadaan (spend-based ~0,31 tCO₂e/Rp juta)
 const profileScope3 = (p) => {
+  const arr = Array.isArray(p && p.scope3) ? p.scope3 : null;
+  if (arr && arr.length) {
+    return arr.reduce((s, c) => s + (Number(c.spend) || 0) * (Number(c.factor) || 0), 0);
+  }
   const t = (p && p.temporal) || {};
   const sp = Number(t.scope3Spend && t.scope3Spend[LATEST_YEAR]);
   const fallback = Number(p && p.procurementSpend) || 0;
@@ -7003,6 +7079,105 @@ const CompanyProfile = ({ profile, setField, setTemporalField, toggleMultiField,
     );
   };
 
+  const renderBreakdown = (cfg) => {
+    const rows = Array.isArray(p[cfg.profileKey]) ? p[cfg.profileKey] : [];
+    const setRows = (arr) => setField(cfg.profileKey, arr);
+    const updateRow = (i, patch) => setRows(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+    const removeRow = (i) => setRows(rows.filter((_, idx) => idx !== i));
+    const addRow = (catId) => { const c = cfg.catalog.find(x => x.id === catId) || cfg.catalog[cfg.catalog.length - 1]; setRows([...rows, { key: 'r' + Date.now(), ...c, spend: 0 }]); };
+    const totalEm = rows.reduce((s, r) => s + cfg.emiss(r), 0);
+    const totalSpend = rows.reduce((s, r) => s + (Number(r.spend) || 0), 0);
+    const thS = { padding: '8px 10px', fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', whiteSpace: 'nowrap' };
+    const numCell = (props) => <input type="number" className="field-input" style={{ padding: '6px 8px', fontSize: 12.5, textAlign: 'right' }} {...props} />;
+    return (
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--purple-700)', marginBottom: 8 }}>{cfg.title}</div>
+        <div style={{ overflowX: 'auto', border: '1px solid var(--border-soft)', borderRadius: 10 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: cfg.minWidth || 620 }}>
+            <thead>
+              <tr style={{ background: 'var(--gray-50)' }}>
+                <th style={{ ...thS, textAlign: 'left' }}>Jenis</th>
+                {cfg.cols.map(c => <th key={c.k} style={{ ...thS, textAlign: 'right' }}>{c.label}</th>)}
+                <th style={{ ...thS, textAlign: 'right' }}>Emisi (tCO₂e)</th>
+                <th style={thS}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 && (
+                <tr><td colSpan={cfg.cols.length + 3} style={{ padding: 14, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12.5 }}>Belum ada item. Tambahkan di bawah.</td></tr>
+              )}
+              {rows.map((r, i) => (
+                <tr key={r.key || i} style={{ borderTop: '1px solid var(--border-soft)' }}>
+                  <td style={{ padding: '5px 8px', minWidth: 160 }}>
+                    <input type="text" className="field-input" style={{ padding: '6px 8px', fontSize: 12.5 }} value={r.label || ''} onChange={e => updateRow(i, { label: e.target.value })} />
+                  </td>
+                  {cfg.cols.map(c => (
+                    <td key={c.k} style={{ padding: '5px 6px', width: c.w }}>
+                      {c.type === 'text'
+                        ? <input type="text" className="field-input" style={{ padding: '6px 8px', fontSize: 12.5, textAlign: c.center ? 'center' : 'left' }} value={r[c.k] || ''} onChange={e => updateRow(i, { [c.k]: e.target.value })} />
+                        : numCell({ step: c.step, value: r[c.k] ?? '', onChange: e => updateRow(i, { [c.k]: e.target.value === '' ? '' : Number(e.target.value) }) })}
+                    </td>
+                  ))}
+                  <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, fontSize: 12.5, color: 'var(--purple-700)', whiteSpace: 'nowrap' }}>{Math.round(cfg.emiss(r)).toLocaleString('id-ID')}</td>
+                  <td style={{ padding: '5px 8px', textAlign: 'center' }}>
+                    <button type="button" onClick={() => removeRow(i)} title="Hapus" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1 }}>×</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '2px solid var(--border-default)', background: 'var(--purple-50)' }}>
+                <td style={{ padding: '8px 10px', fontWeight: 700, fontSize: 12.5 }}>{cfg.totalLabel}</td>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, fontSize: 12.5 }}>{totalSpend.toLocaleString('id-ID')}</td>
+                {cfg.cols.length > 1 && <td colSpan={cfg.cols.length - 1}></td>}
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, fontSize: 13, color: 'var(--purple-700)' }}>{Math.round(totalEm).toLocaleString('id-ID')}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Tambah:</span>
+          {cfg.catalog.map(c => (
+            <button key={c.id} type="button" className="button ghost" style={{ fontSize: 11, padding: '5px 10px' }} onClick={() => addRow(c.id)}>+ {c.label}</button>
+          ))}
+        </div>
+        {cfg.note && <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>{cfg.note}</div>}
+      </div>
+    );
+  };
+
+  const FUEL_CFG = {
+    profileKey: 'fuels', title: 'SCOPE 1 · RINCIAN BAHAN BAKAR (' + LATEST_YEAR + ') — tiap jenis punya faktor emisi sendiri', catalog: FUEL_CATALOG, totalLabel: 'Total Scope 1',
+    cols: [
+      { k: 'spend', label: 'Biaya/thn (Rp juta)', type: 'num' },
+      { k: 'price', label: 'Harga (Rp/unit)', type: 'num' },
+      { k: 'unit', label: 'Unit', type: 'text', w: 64, center: true },
+      { k: 'ef', label: 'Faktor (kgCO₂/unit)', type: 'num', step: 0.01 },
+    ],
+    emiss: (r) => { const pr = Number(r.price) || 0; if (pr <= 0) return 0; return ((Number(r.spend) || 0) * 1e6 / pr) * (Number(r.ef) || 0) / 1000; },
+    note: 'Harga & faktor emisi default per jenis — boleh diedit. Bahan bakar tak terdaftar: pilih Lainnya lalu ganti nama/unit/harga/faktor.',
+  };
+  const ELEC_CFG = {
+    profileKey: 'elec', title: 'SCOPE 2 · RINCIAN SUMBER LISTRIK (' + LATEST_YEAR + ') — grid/EBT/uap beda faktor emisi', catalog: ELEC_CATALOG, totalLabel: 'Total Scope 2', minWidth: 560,
+    cols: [
+      { k: 'spend', label: 'Biaya/thn (Rp juta)', type: 'num' },
+      { k: 'tariff', label: 'Tarif (Rp/kWh)', type: 'num' },
+      { k: 'ef', label: 'Faktor (tCO₂e/MWh)', type: 'num', step: 0.01 },
+    ],
+    emiss: (r) => { const tar = Number(r.tariff) || 0; if (tar <= 0) return 0; return ((Number(r.spend) || 0) * 1000 / tar) * (Number(r.ef) || 0); },
+    note: 'Listrik dari grid berbeda (Jamali vs luar Jamali) punya faktor emisi berbeda; listrik terbarukan/REC ≈ 0. Sesuaikan bila punya angka resmi.',
+  };
+  const SCOPE3_CFG = {
+    profileKey: 'scope3', title: 'SCOPE 3 · RINCIAN KATEGORI (' + LATEST_YEAR + ') — tiap kategori beda faktor (spend-based)', catalog: SCOPE3_CATALOG, totalLabel: 'Total Scope 3', minWidth: 480,
+    cols: [
+      { k: 'spend', label: 'Belanja/thn (Rp juta)', type: 'num' },
+      { k: 'factor', label: 'Faktor (tCO₂e/Rp juta)', type: 'num', step: 0.01 },
+    ],
+    emiss: (r) => (Number(r.spend) || 0) * (Number(r.factor) || 0),
+    note: 'Estimasi spend-based (EEIO). Faktor indikatif per kategori GHG Protocol — ganti dengan faktor sektor spesifik bila ada.',
+  };
+
   const renderConvReadout = () => (
     <div style={{ marginTop: 8, padding: 14, background: 'var(--purple-50)', border: '1px solid var(--purple-200)', borderRadius: 10 }}>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--purple-700)', marginBottom: 10 }}>
@@ -7071,8 +7246,9 @@ const CompanyProfile = ({ profile, setField, setTemporalField, toggleMultiField,
           )}
           {cur.temporal === 'energy' && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--purple-700)', marginBottom: 8 }}>BIAYA ENERGI · {PROFILE_YEARS[0]}–{LATEST_YEAR} (Rp juta)</div>
-              {renderTemporal('energy')}
+              {renderBreakdown(FUEL_CFG)}
+              {renderBreakdown(ELEC_CFG)}
+              {renderBreakdown(SCOPE3_CFG)}
               {renderConvReadout()}
               <hr style={{ border: 'none', borderTop: '1px dashed var(--border-soft)', margin: '18px 0' }} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--purple-700)', marginBottom: 10 }}>KETERANGAN TAMBAHAN (opsional)</div>
