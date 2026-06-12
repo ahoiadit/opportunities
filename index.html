@@ -13916,6 +13916,7 @@ const App = () => {
   const [activeView, setActiveView] = useState('overview');
   const [profile, setProfile] = useState(() => recomputeDerived({ ...DEFAULT_PROFILE, temporal: JSON.parse(JSON.stringify(DEFAULT_PROFILE.temporal)) }));
   const [toast, setToast] = useState(null);
+  const [dbStatus, setDbStatus] = useState({ state: BACKEND_URL ? 'loading' : 'local', detail: '' });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   // Shared across the recommendation flow:
@@ -13933,6 +13934,7 @@ const App = () => {
       let nc = 0, no = 0;
       if (d && Array.isArray(d.companies) && d.companies.length) {
         const cs = d.companies.map(mapSheetCompany).filter(c => c.name); nc = cs.length;
+        COMPANY_DB = cs;                 // sinkron segera agar datalist/lookup langsung pakai data cloud
         dataStore.setCompanyDB(cs);
       }
       if (d && Array.isArray(d.opportunities) && d.opportunities.length) {
@@ -13943,9 +13945,11 @@ const App = () => {
         dataStore.setModelParams(prev => ({ ...prev, ...d.params }));
       }
       flash('✓ Database cloud termuat: ' + nc + ' perusahaan' + (no ? ', ' + no + ' peluang' : ''));
+      setDbStatus({ state: 'cloud', detail: nc + ' perusahaan' + (no ? '/' + no + ' peluang' : '') });
     }).catch(e => {
       console.warn('Muat database cloud gagal, pakai data lokal:', e);
       flash('⚠ Gagal memuat database cloud — pakai data lokal. (' + (e.message || 'CORS/akses') + ')');
+      setDbStatus({ state: 'error', detail: (e.message || 'CORS/akses').slice(0, 40) });
     });
   }, []);
 
@@ -14007,7 +14011,20 @@ const App = () => {
     setActiveView('overview');
   };
 
-  if (!user) return <LoginScreen onLogin={handleLogin} />;
+  const dbChip = (
+    <div style={{ position: 'fixed', left: 10, bottom: 10, zIndex: 90000, fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 20,
+      background: dbStatus.state === 'cloud' ? '#DCFCE7' : dbStatus.state === 'error' ? '#FEE2E2' : dbStatus.state === 'loading' ? '#FEF9C3' : '#E5E7EB',
+      color: dbStatus.state === 'cloud' ? '#166534' : dbStatus.state === 'error' ? '#991B1B' : dbStatus.state === 'loading' ? '#854D0E' : '#374151',
+      border: '1px solid rgba(0,0,0,0.06)', fontFamily: 'var(--font-mono, monospace)' }} title={dbStatus.detail || ''}>
+      {dbStatus.state === 'cloud' ? '● DB: CLOUD' : dbStatus.state === 'error' ? '● DB: GAGAL (lokal)' : dbStatus.state === 'loading' ? '○ DB: memuat…' : '● DB: LOKAL'}
+      {dbStatus.detail ? ' · ' + dbStatus.detail : ''}
+    </div>
+  );
+
+  if (!user) return (<>
+    <LoginScreen onLogin={handleLogin} />
+    {dbChip}
+  </>);
 
   const renderView = () => {
     if (user.role === 'superadmin') {
@@ -14080,6 +14097,7 @@ const App = () => {
           <span>{toast}</span>
         </div>
       )}
+      {dbChip}
       {user.role !== 'superadmin' && <AiCopilot activeView={activeView} profile={profile} />}
       <CommandPalette
         open={cmdOpen}
