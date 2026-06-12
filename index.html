@@ -6728,7 +6728,7 @@ const WIZARD_STEPS = [
   { id: 'identitas', no: '01', title: 'Identitas Perusahaan', icon: 'user', desc: 'Profil dasar & jenis usaha',
     fields: [
       { key: 'companyName', label: 'Nama Perusahaan', type: 'company', col: 2, required: true },
-      { key: 'ticker', label: 'Kode Saham (jika ada)', type: 'text' },
+      { key: 'ticker', label: 'Ticker', type: 'text', placeholder: 'Otomatis dari database bila perusahaan dipilih' },
       { key: 'emitterCategory', label: 'Ukuran Perusahaan', type: 'select', options: [
         { value: 'large-cap', label: 'Besar (aset > Rp 5 triliun)' }, { value: 'mid-cap', label: 'Menengah (Rp 1–5 triliun)' }, { value: 'small-cap', label: 'Kecil (< Rp 1 triliun)' } ] },
       { key: 'industry', label: 'Bidang Usaha', type: 'industry' },
@@ -6923,7 +6923,7 @@ const CompanyProfile = ({ profile, setField, setTemporalField, toggleMultiField,
       const hit = lookupCompany(val);
       control = <>
         <input type="text" className="field-input" list="company-db-list" value={val || ''} placeholder="Ketik untuk mencari di database…"
-          onChange={e => { const v = e.target.value; setField(f.key, v); const c = lookupCompany(v); if (c && c.sector && INDUSTRY_LIST.includes(c.sector)) setField('industry', c.sector); }} autoComplete="off" />
+          onChange={e => { const v = e.target.value; setField(f.key, v); const c = lookupCompany(v); if (c) { if (c.ticker) setField('ticker', c.ticker); if (c.sector && INDUSTRY_LIST.includes(c.sector)) setField('industry', c.sector); } }} autoComplete="off" />
         <datalist id="company-db-list">{COMPANY_DB.map(c => <option key={c.ticker} value={c.name}>{c.sector}</option>)}</datalist>
         <div style={{ fontSize: 10.5, marginTop: 4, color: hit ? 'var(--green-600, #16A34A)' : 'var(--text-muted)' }}>
           {hit ? `✓ Ditemukan di database (${hit.sector}) — industri otomatis disetel & rating tersedia di tab Rating.` : 'Tidak di database — boleh diketik bebas. ESG Rating & Peer Benchmark hanya muncul bila nama ada di database.'}
