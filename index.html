@@ -434,8 +434,8 @@ body {
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 0 24px;
+  gap: 12px;
+  padding: 0 20px;
   height: 62px;
   max-width: 1680px;
   margin: 0 auto;
@@ -469,7 +469,7 @@ body {
 .topnav-groups {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
@@ -477,14 +477,14 @@ body {
 .tn-group-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
+  gap: 5px;
+  padding: 7px 10px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: rgba(255,255,255,0.72);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.16s ease;
@@ -648,8 +648,13 @@ body {
   margin: 0 auto;
 }
 
-/* Mobile: collapse group nav into hamburger drawer */
-@media (max-width: 1080px) {
+/* Hide countdown chip on tighter desktop widths to prevent overlap */
+@media (max-width: 1520px) {
+  .topnav .countdown-chip { display: none; }
+}
+
+/* Collapse group nav into hamburger drawer on medium/small screens */
+@media (max-width: 1400px) {
   .topnav-groups { display: none; }
   .tn-search-btn kbd { display: none; }
   .topnav .countdown-chip { display: none; }
